@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>LOFAR target visibility</title>
+		<!-- Required meta tags -->
+    	<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<script type="text/javascript" src="/otool{{ url_for('static', filename='scripts/otool.js') }}"></script>
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.standalone.min.css"/>
+		<link rel="stylesheet" ref="/otool{{ url_for('static', filename='octicons-6.0.1/lib/octicons.css') }}"/>
+	</head>
+	<body>
+		<div class="container">
+
+			<div class="row p-5 my-3">
+				<div class="col-md-3">
+					<img src="/otool{{ url_for('static', filename='images/LOFAR_logo.jpg') }}" alt="LOFAR logo" width="150"/>
+				</div>
+				<div class="col-md-6" border="1">
+					<h3><p class="text-secondary text-center">Target visibility calculator</p></h3>
+				</div>
+				<div class="col-md-3">
+					<img src="/otool{{ url_for('static', filename='images/Astron_logo.jpg') }}" alt="ASTRON logo" width="250"/>
+				</div>
+			</div>
+			<div class="p-3 row bg-light border my-3">
+				<div class="p-1 col-md-12 align-self-center">
+					<ul class="list-group">
+						<li class="list-group-item list-group-item-secondary" font-color="#003893">For a given target, this calculator displays its visibility and elevation over a 24hr period at a date set by the user.</li>
+						<li class="list-group-item list-group-item-secondary">The default minimum elevation is 20 degrees, it can be modified by the user.</li>
+						<li class="list-group-item list-group-item-secondary">The user can select to display the visibility of the LOFAR standard calibrator sources, some solar system targets and some of the brightest radio sources on the sky (the A team).</li>
+						<li class="list-group-item list-group-item-secondary">The plotted graphics can be manipulated using the pan and zoom controls in the plot menu.</li>
+						<li class="list-group-item list-group-item-secondary">The angular distance between any selected sources and the target(s) is shown at the bottom of the page.</li>
+					</ul>
+				</div>
+			</div>
+			<div id="malformed" class="alert alert-danger alert-dismissible fade show" role="alert" style="display:none;">
+				<strong>The target list is malformed !</strong>
+					<button type="button" class="close" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+			</div>
+			<div id="alert" class="alert alert-danger alert-dismissible fade show" role="alert" style="display:none;">
+				<strong>Please provide a target (list) and / or a date and / or an elevation.</strong>
+					<button type="button" class="close" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+			</div>
+			<form id="targets" action="/otool/calculate/" method="post">
+				<div id="info" class="p-3 row bg-light border my-3" style="display:none;">
+					<div class="p-1 col-md-12 align-self-center">
+						{% if info != null %}
+						{{ info|safe }}
+						{% endif %}
+					</div>
+				</div>
+				<div id="plot" class="p-3 row bg-light border my-3" style="display:none;">
+					<div class="p-1 col-md-12 align-self-center">
+						{% if plot != null %}
+						{{ plot|safe }}
+						{% endif %}
+					</div>
+				</div>
+				<div class="p-3 row bg-light border my-3">
+							<div class="p-1 col-md-6 align-self-center">
+					      		<textarea rows="5" cols="40" class="form-control" id="targetList" name="targetList" placeholder="Targets" data-toggle="tooltip" data-placement="top" title="Uses the NED and Simbad resolving services - in that order">{% if form != null %}{{ form['targetList']|safe }}{% endif %}</textarea>
+					      			<small id="targetListHelpBlock" class="form-text text-muted">The target list should contain one target per line and be formatted as: Name or Name hh:mm:ss.s dd:mm:ss.s or hh:mm:ss.s dd:mm:ss.s
+					      			</small>
+					      			<!--div class="invalid-feedback">Please provide a target (list).</div-->
+					      		<input id="names" name="names" type="hidden" {% if form != null %}value = "{{ form['names']|safe }}"{% endif %}/>
+					      		<input id="ra" name="ra" type="hidden" {% if form != null %}value = "{{ form['ra']|safe }}"{% endif %}/>
+								<input id="dec" name="dec" type="hidden" {% if form != null %}value = "{{ form['dec']|safe }}"{% endif %}/>
+							</div>
+							<div class="p-1 col-md-3 align-self-center">
+							<label for="date" class="text-secondary">Date</label>
+							<div class="p-0 input-group date">
+					      		<input type="text" class="form-control" id="date" name="date" data-provide="datepicker" placeholder="MM/DD/YYYY" data-date-autoclose="true" data-date-today-highlight="true" {% if form != null %}value = "{{ form['date']|safe }}"{% endif %} required>
+					      		<div class="input-group-addon">
+        							<svg version="1.1" width="22" height="22" viewBox="0 0 15 15" class="octicon octicon-x" aria-hidden="true">
+    									<image xlink:href="/otool{{ url_for('static', filename='octicons-6.0.1/lib/svg/calendar.svg') }}" />
+									</svg>
+    							</div>
+					  		</div>
+					  		</div>
+							<div class="p-1 col-md-3 align-self-center">
+								<label for="elevation" class="text-secondary">Elevation (degrees)</label>
+					      		<input type="text" class="form-control" id="elevation" name="elevation" {% if form != null %}value = "{{ form['elevation']|safe }}"{% endif %} value="20" required="required">
+					  		</div>
+				</div>
+
+				<div class="p-5 row bg-light border my-3">
+					<div class="p-1 col-md-4">
+						<p class="text-secondary">Brightest radio sources (A team)</p>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="CygA" name="CygA" type="checkbox" {% if (form != null) and (form['CygA'] == 'on') %}checked{% endif %}/>
+						    CygA
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="CasA" name="CasA" type="checkbox" {% if (form != null) and (form['CasA'] == 'on') %}checked{% endif %}/>
+						    CasA
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="TauA" name="TauA" type="checkbox" {% if (form != null) and (form['TauA'] == 'on') %}checked{% endif %}/>
+						    TauA
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="VirA" name="VirA" type="checkbox" {% if (form != null) and (form['VirA'] == 'on') %}checked{% endif %}/>
+						    VirA
+						  </label>
+						</div>
+					</div>
+					<div class="p-1 col-md-4">
+						<p class="text-secondary">LOFAR calibrators</p>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C48" name="3C48" type="checkbox" {% if (form != null) and (form['3C48'] == 'on') %}checked{% endif %}/>
+						    3C48
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C147" name="3C147" type="checkbox" {% if (form != null) and (form['3C147'] == 'on') %}checked{% endif %}/>
+						    3C147
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C295" name="3C295" type="checkbox" {% if (form != null) and (form['3C295'] == 'on') %}checked{% endif %}/>
+						    3C295
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C196" name="3C196" type="checkbox" {% if (form != null) and (form['3C196'] == 'on') %}checked{% endif %}/>
+						    3C196
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C380" name="3C380" type="checkbox" {% if (form != null) and (form['3C380'] == 'on') %}checked{% endif %}/>
+						    3C380
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="3C286" name="3C286" type="checkbox" {% if (form != null) and (form['3C286'] == 'on') %}checked{% endif %}/>
+						    3C286
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="CTD93" name="CTD93" type="checkbox" {% if (form != null) and (form['CTD93'] == 'on') %}checked{% endif %}/>
+						    CTD93
+						  </label>
+						</div>
+					</div>
+					<div class="p-1 col-md-4">
+						<p class="text-secondary">Sol system</p>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="Sun" name="Sun" type="checkbox" {% if (form != null) and (form['Sun'] == 'on') %}checked{% endif %}/>
+						    Sun
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="Jupiter" name="Jupiter" type="checkbox" {% if (form != null) and (form['Jupiter'] == 'on') %}checked{% endif %}/>
+						    Jupiter
+						  </label>
+						</div>
+						<div class="form-check">
+						  <label class="form-check-label text-secondary">
+						    <input class="form-check-input" id="Saturn" name="Saturn" type="checkbox" {% if (form != null) and (form['Saturn'] == 'on') %}checked{% endif %}/>
+						    Saturn
+						  </label>
+						</div>
+					</div>
+				</div>
+				<div class="row my-3">
+			  		<button type="button" class="btn btn-primary" onclick="if(validate()){submitTargets()};">Calculate</button>
+			  	</div>
+			</form>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script>
+		<script type="text/javascript">
+			$('.datepicker').datepicker();
+			$(function () {
+  				$('[data-toggle="tooltip"]').tooltip()
+			});
+			$('.alert .close').on('click', function(e) {
+    			$(this).parent().hide();
+			});
+			$('.malformed .close').on('click', function(e) {
+    			$(this).parent().hide();
+			});
+			if(window.location.href.endsWith("calculate/")){
+				$('#info').show();
+        		$('#plot').show();
+        	}
+		</script>
+	</body>
+</html>
